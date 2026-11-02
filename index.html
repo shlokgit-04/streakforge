@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreakForge · DSA streak companion</title>
+<meta name="description" content="Offline-first DSA streak companion: daily problem picks, a contribution-style heatmap and a spaced-repetition revision queue. All data stays on your device.">
+<meta name="theme-color" content="#0b0f19">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <span class="logo">SF</span>
+  <span class="name">StreakForge</span>
+  <span id="engine-badge" class="badge">offline-first · local only</span>
+</header>
+<main>
+  <h1>Forge the streak. Keep it lit.</h1>
+  <p class="sub">A daily DSA companion that picks your problems, tracks your streak on a GitHub-style heat grid, and resurfaces solved problems for spaced revision. Everything lives in your browser storage, nothing leaves your device.</p>
+
+  <section class="grid">
+    <div class="card" id="streak-card">
+      <div class="kpi">
+        <div><span id="streak" class="big">0</span><span class="unit">day streak</span></div>
+        <div><span id="total-solved" class="mid">0</span><span class="unit">solved total</span></div>
+        <div><span id="today-count" class="mid">0</span><span class="unit">today</span></div>
+      </div>
+      <div id="heatmap" class="heat" aria-label="last 15 weeks of activity"></div>
+    </div>
+
+    <div class="card">
+      <h2>Today's plan</h2>
+      <p id="plan-topic" class="muted"></p>
+      <ul id="plan-list" class="plan"></ul>
+      <p class="muted small">Not in the mood for today's topic? Shuffle it.</p>
+      <button id="shuffle" class="ghost">Shuffle today's topic</button>
+    </div>
+
+    <div class="card">
+      <h2>Revision queue</h2>
+      <p id="rev-empty" class="muted">Solve a problem and it will come back for review after 3 days, then 7, then 14. That's how it sticks.</p>
+      <ul id="rev-list" class="plan"></ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Problem bank</h2>
+    <div class="filters">
+      <select id="f-topic"></select>
+      <select id="f-diff"></select>
+      <input id="f-q" type="search" placeholder="search title…">
+    </div>
+    <ul id="bank-list" class="bank"></ul>
+  </section>
+
+  <footer>
+    <span>StreakForge · built for Next Byte Hacks V5</span>
+    <span class="muted">Your data never leaves this device. Clearing browser data clears the streak.</span>
+  </footer>
+</main>
+<script src="bank.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

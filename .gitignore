@@ -1,0 +1,5 @@
+server/streakforge.db
+server/streakforge.db-wal
+server/streakforge.db-shm
+__pycache__/
+*.pyc

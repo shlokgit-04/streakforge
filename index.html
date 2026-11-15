@@ -14,7 +14,8 @@
 <header>
   <span class="logo">SF</span>
   <span class="name">StreakForge</span>
-  <span id="engine-badge" class="badge">offline-first · local only</span>
+  <span id="engine-badge" class="badge">offline-first · syncs when you sign in</span>
+  <nav id="account" class="acct"></nav>
 </header>
 <main>
   <h1>Forge the streak. Keep it lit.</h1>
@@ -56,11 +57,12 @@
   </section>
 
   <footer>
-    <span>StreakForge · built for Next Byte Hacks V5</span>
-    <span class="muted">Your data never leaves this device. Clearing browser data clears the streak.</span>
+    <span>StreakForge · built for Next Byte Hacks V5 · <a href="about.html" style="color:var(--acc);text-decoration:none">About</a> · <a href="privacy.html" style="color:var(--mut);text-decoration:none">Privacy policy</a></span>
+    <span class="muted">Made by <a href="https://shlok.is-a.dev" style="color:var(--acc);text-decoration:none">Shlok V.</a> · local-only mode keeps data on this device</span>
   </footer>
 </main>
 <script src="bank.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

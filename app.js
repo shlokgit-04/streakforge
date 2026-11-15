@@ -3,6 +3,71 @@
 //   sf_review  { slug: { level: 0..3, due: "YYYY-MM-DD" } }
 //   sf_topic   dayIndex -> topic rotation offset override
 const $ = (id)=>document.getElementById(id);
+
+// ---- account + sync layer (optional: local-only mode works without it) ----
+const getToken = () => localStorage.getItem("sf_token") || "";
+const getUser = () => { try { return JSON.parse(localStorage.getItem("sf_user")||"null"); } catch { return null; } };
+let syncInFlight = false;
+
+function renderAccount(){
+  const nav = document.getElementById("account");
+  if(!nav) return;
+  const u = getUser();
+  if(getToken() && u){
+    nav.innerHTML = `<span class="who">${u.name ? u.name + " · " : ""}${u.email}</span>` +
+      `<button id="export-btn" type="button">export</button><button id="signout" type="button">sign out</button>`;
+    document.getElementById("signout").onclick = () => {
+      localStorage.removeItem("sf_token"); localStorage.removeItem("sf_user"); location.reload();
+    };
+    document.getElementById("export-btn").onclick = async () => {
+      const r = await fetch(API_BASE + "/api/auth/export", { headers: { Authorization: "Bearer " + getToken() } });
+      if(r.ok){ const data = await r.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+        link.download = "streakforge-export.json"; link.click(); URL.revokeObjectURL(link.href); }
+    };
+  } else {
+    nav.innerHTML = `<a href="login.html">Sign in</a>`;
+  }
+}
+
+async function pushState(){
+  const tok = getToken(); if(!tok || syncInFlight) return;
+  syncInFlight = true;
+  try {
+    await fetch(API_BASE + "/api/data/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+      body: JSON.stringify({ done, review })
+    });
+  } catch { /* offline: the next action pushes */ }
+  syncInFlight = false;
+}
+
+async function pullAndMerge(){
+  const tok = getToken(); if(!tok) { renderAccount(); return; }
+  renderAccount();
+  try {
+    const r = await fetch(API_BASE + "/api/data", { headers: { Authorization: "Bearer " + tok } });
+    if(r.status === 401){ localStorage.removeItem("sf_token"); localStorage.removeItem("sf_user"); renderAccount(); return; }
+    if(!r.ok) return;
+    const state = await r.json();
+    let changed = false;
+    for(const [iso, slugs] of Object.entries(state.done || {})){
+      done[iso] = done[iso] || [];
+      for(const s of slugs){ if(!done[iso].includes(s)){ done[iso].push(s); changed = true; } }
+    }
+    for(const [slug, rv] of Object.entries(state.review || {})){
+      const cur = review[slug];
+      if(!cur || rv.level > cur.level || (rv.level === cur.level && rv.due > cur.due)){
+        review[slug] = { level: rv.level, due: rv.due }; changed = true;
+      }
+    }
+    if(changed){ save(); renderStats(); planList(); renderRevision(); renderBank(); }
+    pushState(); // make the server catch up with anything done locally while signed out
+  } catch { /* offline-first: local data stays authoritative for this session */ }
+}
+
 const todayISO = ()=> new Date().toISOString().slice(0,10);
 const done = JSON.parse(localStorage.getItem("sf_done")||"{}");
 const review = JSON.parse(localStorage.getItem("sf_review")||"{}");
@@ -67,7 +132,7 @@ function markSolved(slug){
   done[iso]=done[iso]||[];
   if(!done[iso].includes(slug))done[iso].push(slug);
   const r=review[slug]||{level:0};r.due=isoOf(dayIndex()+[3,7,14,30][r.level||0]);r.level=(r.level||0)+1;
-  review[slug]=r;save();renderStats();planList();renderRevision();renderBank();
+  review[slug]=r;save();renderStats();planList();renderRevision();renderBank();pushState();
 }
 // revision queue
 function renderRevision(){
@@ -81,7 +146,7 @@ function renderRevision(){
     a.textContent=meta?meta.title:slug;li.appendChild(a);
     const tag=document.createElement("span");tag.className="tag";tag.textContent=`round ${r.level} · due ${r.due}`;li.appendChild(tag);
     const b=document.createElement("button");b.className="done-btn";b.textContent="reviewed";
-    b.onclick=()=>{const rr=review[slug];rr.due=isoOf(dayIndex()+[0,7,14,30,60][Math.min(rr.level,4)]);rr.level++;save();renderRevision();};
+    b.onclick=()=>{const rr=review[slug];rr.due=isoOf(dayIndex()+[0,7,14,30,60][Math.min(rr.level,4)]);rr.level++;save();renderRevision();pushState();};
     li.appendChild(b);ul.appendChild(li);
   });
 }
@@ -97,3 +162,4 @@ $("f-diff").innerHTML=`<option value="all">any difficulty</option><option>easy</
 $("f-topic").onchange=renderBank;$("f-diff").onchange=renderBank;$("f-q").oninput=renderBank;
 $("shuffle").onclick=()=>{localStorage.setItem("sf_topic",(dayIndex()+1+Math.floor(Math.random()*(TOPICS.length-1)))-dayIndex());planList();};
 renderStats();planList();renderRevision();renderBank();
+pullAndMerge();
